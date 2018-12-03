@@ -39,30 +39,35 @@ TEST(ThatIter, createsAVectorIterator) {
   EXPECT_THAT(iter(std::vector<uint32_t>{}), A<VectorIterator<uint32_t>>());
 }
 
-class ThatVectorIterator : public ::testing::Test {
+class ThatVectorIteratorNext : public ::testing::Test {
  protected:
   VectorIterator<uint32_t> empty_vector_iter_ = iter(std::vector<uint32_t>{});
   VectorIterator<uint32_t> vector_iter_ =
       iter(std::vector<uint32_t>{1, 2, 3, 4});
 };
 
-TEST_F(ThatVectorIterator, nextReturnsNulloptIfEmpty) {
+TEST_F(ThatVectorIteratorNext, returnsNulloptIfEmpty) {
   EXPECT_THAT(empty_vector_iter_.next(), NullOpt<uint32_t>());
 }
 
-TEST_F(ThatVectorIterator, nextReturnsFirstValue) {
+TEST_F(ThatVectorIteratorNext, returnsFirstValue) {
   EXPECT_THAT(vector_iter_.next(), Optional<uint32_t>(1));
 }
 
-TEST_F(ThatVectorIterator, repeatedNextReturnsAllValuesAndNullopt) {
-  EXPECT_THAT(vector_iter_.next(), Optional<uint32_t>(1));
+TEST_F(ThatVectorIteratorNext, returnsMiddleValueIfAlreadyCalled) {
+  vector_iter_.next();
   EXPECT_THAT(vector_iter_.next(), Optional<uint32_t>(2));
-  EXPECT_THAT(vector_iter_.next(), Optional<uint32_t>(3));
-  EXPECT_THAT(vector_iter_.next(), Optional<uint32_t>(4));
+}
+
+TEST_F(ThatVectorIteratorNext, returnsNulloptWhenConsumed) {
+  vector_iter_.next();
+  vector_iter_.next();
+  vector_iter_.next();
+  vector_iter_.next();
   EXPECT_THAT(vector_iter_.next(), NullOpt<uint32_t>());
 }
 
-using ThatVectorIteratorSizeHint = ThatVectorIterator;
+using ThatVectorIteratorSizeHint = ThatVectorIteratorNext;
 
 TEST_F(ThatVectorIteratorSizeHint, returns4And4For4Elements) {
   EXPECT_THAT(vector_iter_.size_hint(), Pair(4, Optional<size_t>(4)));
@@ -73,7 +78,7 @@ TEST_F(ThatVectorIteratorSizeHint, returns3And3AfterANext) {
   EXPECT_THAT(vector_iter_.size_hint(), Pair(3, Optional<size_t>(3)));
 }
 
-using ThatVectorIteratorCount = ThatVectorIterator;
+using ThatVectorIteratorCount = ThatVectorIteratorNext;
 
 TEST_F(ThatVectorIteratorCount, returns4Initially) {
   EXPECT_THAT(vector_iter_.count(), Eq(4));
@@ -84,7 +89,7 @@ TEST_F(ThatVectorIteratorCount, returns3AfterNext) {
   EXPECT_THAT(vector_iter_.count(), Eq(3));
 }
 
-using ThatVectorIteratorLast = ThatVectorIterator;
+using ThatVectorIteratorLast = ThatVectorIteratorNext;
 
 TEST_F(ThatVectorIteratorLast, returns4IfValuesRemain) {
   EXPECT_THAT(vector_iter_.last(), Optional<uint32_t>(4));
@@ -100,14 +105,17 @@ TEST_F(ThatVectorIteratorLast, returnsNulloptAfterConsumed) {
   EXPECT_THAT(vector_iter_.last(), NullOpt<uint32_t>());
 }
 
-using ThatVectorIteratorNth = ThatVectorIterator;
+using ThatVectorIteratorNth = ThatVectorIteratorNext;
 
 TEST_F(ThatVectorIteratorNth, returnsSecondItem) {
   EXPECT_THAT(vector_iter_.nth(1), Optional<uint32_t>(2));
 }
 
-TEST_F(ThatVectorIteratorNth, returnsNulloptIfNGreaterOrEqualToSize) {
+TEST_F(ThatVectorIteratorNth, returnsNulloptIfNEqualToSize) {
   EXPECT_THAT(vector_iter_.nth(4), NullOpt<uint32_t>());
+}
+
+TEST_F(ThatVectorIteratorNth, returnsNulloptIfNGreaterThanSize) {
   EXPECT_THAT(vector_iter_.nth(5), NullOpt<uint32_t>());
 }
 
@@ -117,7 +125,7 @@ TEST_F(ThatVectorIteratorNth, calledMultipleTimesDoesntRewind) {
   EXPECT_THAT(vector_iter_.nth(1), NullOpt<uint32_t>());
 }
 
-class ThatStepByIteratorNext : public ThatVectorIterator {
+class ThatStepByIteratorNext : public ThatVectorIteratorNext {
  public:
   decltype(vector_iter_ | step_by(2)) step_by_iter_ = vector_iter_ | step_by(2);
 };
@@ -127,28 +135,50 @@ TEST_F(ThatStepByIteratorNext, returnsFirstValue) {
 }
 
 TEST_F(ThatStepByIteratorNext, skipsValueOnRepeatedNext) {
-  EXPECT_THAT(step_by_iter_.next(), Optional<uint32_t>(1));
+  step_by_iter_.next();
   EXPECT_THAT(step_by_iter_.next(), Optional<uint32_t>(3));
+}
+
+TEST_F(ThatStepByIteratorNext, returnsNulloptWhenConsumed) {
+  step_by_iter_.next();
+  step_by_iter_.next();
   EXPECT_THAT(step_by_iter_.next(), NullOpt<uint32_t>());
 }
 
-using ThatChainIteratorNext = ThatVectorIterator;
+class ThatChainIteratorNext : public ThatVectorIteratorNext {
+ protected:
+  VectorIterator<uint32_t> vector_iter_2 =
+      iter(std::vector<uint32_t>{5, 6, 7, 8});
+  decltype(vector_iter_ | chain(vector_iter_2)) chain_iter =
+      vector_iter_ | chain(vector_iter_2);
+};
 
-TEST_F(ThatChainIteratorNext, returnsEntireSequence) {
-  auto vector_iter_2 = iter(std::vector<uint32_t>{5, 6, 7, 8});
-  auto chain_iter = vector_iter_ | chain(vector_iter_2);
+TEST_F(ThatChainIteratorNext, returnsFirstItem) {
   EXPECT_THAT(chain_iter.next(), Optional<uint32_t>(1));
-  EXPECT_THAT(chain_iter.next(), Optional<uint32_t>(2));
-  EXPECT_THAT(chain_iter.next(), Optional<uint32_t>(3));
-  EXPECT_THAT(chain_iter.next(), Optional<uint32_t>(4));
+}
+
+TEST_F(ThatChainIteratorNext,
+       returnsFirstItemOfSecondSequenceWhenFirstConsumed) {
+  chain_iter.next();
+  chain_iter.next();
+  chain_iter.next();
+  chain_iter.next();
   EXPECT_THAT(chain_iter.next(), Optional<uint32_t>(5));
-  EXPECT_THAT(chain_iter.next(), Optional<uint32_t>(6));
-  EXPECT_THAT(chain_iter.next(), Optional<uint32_t>(7));
-  EXPECT_THAT(chain_iter.next(), Optional<uint32_t>(8));
+}
+
+TEST_F(ThatChainIteratorNext, returnsNulloptWhenSecondConsumed) {
+  chain_iter.next();
+  chain_iter.next();
+  chain_iter.next();
+  chain_iter.next();
+  chain_iter.next();
+  chain_iter.next();
+  chain_iter.next();
+  chain_iter.next();
   EXPECT_THAT(chain_iter.next(), NullOpt<uint32_t>());
 }
 
-using ThatZipIteratorNext = ThatVectorIterator;
+using ThatZipIteratorNext = ThatVectorIteratorNext;
 
 TEST_F(ThatZipIteratorNext, returnsZippedValues) {
   using value_type = std::pair<uint32_t, uint32_t>;
@@ -156,10 +186,6 @@ TEST_F(ThatZipIteratorNext, returnsZippedValues) {
   auto vector_iter_2 = iter(std::vector<uint32_t>{5, 6, 7, 8});
   auto zip_iter = vector_iter_ | zip(vector_iter_2);
   EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(1u, 5u)));
-  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(2u, 6u)));
-  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(3u, 7u)));
-  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(4u, 8u)));
-  EXPECT_THAT(zip_iter.next(), NullOpt<value_type>());
 }
 
 TEST_F(ThatZipIteratorNext, returnsNoneIfFirstEnds) {
@@ -167,10 +193,10 @@ TEST_F(ThatZipIteratorNext, returnsNoneIfFirstEnds) {
 
   auto vector_iter_2 = iter(std::vector<uint32_t>{5, 6, 7, 8, 9});
   auto zip_iter = vector_iter_ | zip(vector_iter_2);
-  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(1u, 5u)));
-  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(2u, 6u)));
-  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(3u, 7u)));
-  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(4u, 8u)));
+  zip_iter.next();
+  zip_iter.next();
+  zip_iter.next();
+  zip_iter.next();
   EXPECT_THAT(zip_iter.next(), NullOpt<value_type>());
 }
 
@@ -179,8 +205,8 @@ TEST_F(ThatZipIteratorNext, returnsNoneIfSecondEnds) {
 
   auto vector_iter_2 = iter(std::vector<uint32_t>{5, 6, 7});
   auto zip_iter = vector_iter_ | zip(vector_iter_2);
-  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(1u, 5u)));
-  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(2u, 6u)));
-  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(3u, 7u)));
+  zip_iter.next();
+  zip_iter.next();
+  zip_iter.next();
   EXPECT_THAT(zip_iter.next(), NullOpt<value_type>());
 }
