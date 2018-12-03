@@ -12,6 +12,7 @@
 #include "iterator.hpp"
 #include "step_by.hpp"
 #include "vector_iterator.hpp"
+#include "zip.hpp"
 
 using ::testing::A;
 using ::testing::AllOf;
@@ -145,4 +146,18 @@ TEST_F(ThatChainIteratorNext, returnsEntireSequence) {
   EXPECT_THAT(chain_iter.next(), Optional<uint32_t>(7));
   EXPECT_THAT(chain_iter.next(), Optional<uint32_t>(8));
   EXPECT_THAT(chain_iter.next(), NullOpt<uint32_t>());
+}
+
+using ThatZipIteratorNext = ThatVectorIterator;
+
+TEST_F(ThatZipIteratorNext, returnsZippedValues) {
+  using value_type = std::pair<uint32_t, uint32_t>;
+
+  auto vector_iter_2 = iter(std::vector<uint32_t>{5, 6, 7, 8});
+  auto zip_iter = vector_iter_ | zip(vector_iter_2);
+  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(1u, 5u)));
+  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(2u, 6u)));
+  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(3u, 7u)));
+  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(4u, 8u)));
+  EXPECT_THAT(zip_iter.next(), NullOpt<value_type>());
 }
