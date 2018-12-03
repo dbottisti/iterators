@@ -161,3 +161,26 @@ TEST_F(ThatZipIteratorNext, returnsZippedValues) {
   EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(4u, 8u)));
   EXPECT_THAT(zip_iter.next(), NullOpt<value_type>());
 }
+
+TEST_F(ThatZipIteratorNext, returnsNoneIfFirstEnds) {
+  using value_type = std::pair<uint32_t, uint32_t>;
+
+  auto vector_iter_2 = iter(std::vector<uint32_t>{5, 6, 7, 8, 9});
+  auto zip_iter = vector_iter_ | zip(vector_iter_2);
+  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(1u, 5u)));
+  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(2u, 6u)));
+  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(3u, 7u)));
+  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(4u, 8u)));
+  EXPECT_THAT(zip_iter.next(), NullOpt<value_type>());
+}
+
+TEST_F(ThatZipIteratorNext, returnsNoneIfSecondEnds) {
+  using value_type = std::pair<uint32_t, uint32_t>;
+
+  auto vector_iter_2 = iter(std::vector<uint32_t>{5, 6, 7});
+  auto zip_iter = vector_iter_ | zip(vector_iter_2);
+  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(1u, 5u)));
+  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(2u, 6u)));
+  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(3u, 7u)));
+  EXPECT_THAT(zip_iter.next(), NullOpt<value_type>());
+}
