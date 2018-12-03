@@ -1,171 +1,17 @@
+// System includes
 #include <optional>
 #include <type_traits>
 #include <vector>
 
-template <typename BaseIterator>
-class StepByIterator;
-
-template <typename T, typename Self>
-class Iterator {
- public:
-  using value_type = T;
-
-  virtual std::optional<T> next() = 0;
-
-  virtual std::pair<size_t, std::optional<size_t>> size_hint() const {
-    return {0, std::nullopt};
-  }
-
-  virtual size_t count() {
-    auto count = 0;
-    while (next().has_value()) {
-      ++count;
-    }
-    return count;
-  }
-
-  virtual std::optional<T> last() {
-    std::optional<T> current_last;
-    std::optional<T> current_next = next();
-    while (current_next) {
-      current_last = current_next;
-      current_next = next();
-    }
-    return current_last;
-  }
-
-  virtual std::optional<T> nth(const size_t n) {
-    std::optional<T> current_next = next();
-    for (auto i = 0; i < n && current_next.has_value(); ++i) {
-      current_next = next();
-    }
-    return current_next;
-  }
-};
-
-//==============================================================================
-
-template <typename BaseIterator>
-class StepByIterator {
- public:
-  using value_type = typename BaseIterator::value_type;
-
-  StepByIterator(BaseIterator base_iterator, size_t skip)
-      : base_iterator_{std::move(base_iterator)}, skip_{skip} {}
-
-  std::optional<value_type> next() {
-    const auto result = base_iterator_.next();
-    for (auto i = 1; i < skip_; ++i) {
-      base_iterator_.next();
-    }
-    return result;
-  }
-
- private:
-  BaseIterator base_iterator_;
-  size_t skip_;
-};
-
-struct StepByProxy {
-  size_t step;
-};
-
-StepByProxy step_by(const size_t step) { return {step}; }
-
-template <typename LeftIterator>
-StepByIterator<std::remove_reference_t<LeftIterator>> operator|(
-    LeftIterator&& left_iterator, const StepByProxy step_by_proxy) {
-  return {std::forward<LeftIterator>(left_iterator), step_by_proxy.step};
-}
-
-//==============================================================================
-
-template <typename FirstIterator, typename SecondIterator>
-class ChainIterator {
-  static_assert(std::is_same_v<typename FirstIterator::value_type,
-                               typename SecondIterator::value_type>,
-                "Only iterators producing the same types can be chained");
-
- public:
-  using value_type = typename FirstIterator::value_type;
-
-  ChainIterator(FirstIterator first_iterator, SecondIterator second_iterator)
-      : first_iterator_{std::move(first_iterator)},
-        second_iterator_{std::move(second_iterator)} {}
-
-  std::optional<value_type> next() {
-    if (!first_done_) {
-      auto result = first_iterator_.next();
-      if (result.has_value()) {
-        return result;
-      }
-      first_done_ = true;
-    }
-
-    return second_iterator_.next();
-  }
-
- private:
-  FirstIterator first_iterator_;
-  SecondIterator second_iterator_;
-  bool first_done_ = false;
-};
-
-template <typename SecondIterator>
-struct ChainProxy {
-  SecondIterator second_iterator;
-};
-
-template <typename SecondIterator>
-ChainProxy<SecondIterator> chain(SecondIterator&& second_iterator) {
-  return {std::forward<SecondIterator>(second_iterator)};
-}
-
-template <typename LeftIterator, typename SecondIterator>
-ChainIterator<std::remove_reference_t<LeftIterator>,
-              std::remove_reference_t<SecondIterator>>
-operator|(LeftIterator&& left_iterator,
-          ChainProxy<SecondIterator>&& step_proxy) {
-  return {std::forward<LeftIterator>(left_iterator),
-          std::move(step_proxy.second_iterator)};
-}
-
-//==============================================================================
-
-template <typename T>
-class VectorIterator : public Iterator<T, VectorIterator<T>> {
- public:
-  explicit VectorIterator(std::vector<T>&& values)
-      : values_{std::move(values)} {}
-
-  std::optional<T> next() {
-    if (itr_ == end_) {
-      return std::nullopt;
-    } else {
-      return *itr_++;
-    }
-  }
-
-  std::pair<size_t, std::optional<size_t>> size_hint() const {
-    const auto num_elements = std::distance(itr_, end_);
-    return {num_elements, num_elements};
-  }
-
- private:
-  std::vector<T> values_;
-  typename std::vector<T>::const_iterator itr_ = values_.cbegin();
-  typename std::vector<T>::const_iterator end_ = values_.cend();
-};
-
-template <typename T>
-VectorIterator<T> iter(std::vector<T>&& v) {
-  return VectorIterator<T>{std::move(v)};
-}
-
-//------------------------------------------------------------------------------
-
+// Library includes
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+// Local includes
+#include "chain.hpp"
+#include "iterator.hpp"
+#include "step_by.hpp"
+#include "vector_iterator.hpp"
 
 using ::testing::A;
 using ::testing::AllOf;
