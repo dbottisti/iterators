@@ -1,8 +1,13 @@
 #ifndef ZIP_HPP
 #define ZIP_HPP
 
+#include "iterator.hpp"
+
 template <typename FirstIterator, typename SecondIterator>
-class ZipIterator {
+class ZipIterator
+    : public Iterator<std::pair<typename FirstIterator::value_type,
+                                typename SecondIterator::value_type>,
+                      ZipIterator<FirstIterator, SecondIterator>> {
  public:
   using value_type = std::pair<typename FirstIterator::value_type,
                                typename SecondIterator::value_type>;

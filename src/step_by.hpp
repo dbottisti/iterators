@@ -4,7 +4,8 @@
 #include "iterator.hpp"
 
 template <typename BaseIterator>
-class StepByIterator {
+class StepByIterator : public Iterator<typename BaseIterator::value_type,
+                                       StepByIterator<BaseIterator>> {
  public:
   using value_type = typename BaseIterator::value_type;
 
