@@ -17,24 +17,34 @@
 
 using ::testing::A;
 using ::testing::AllOf;
+using ::testing::DoubleNear;
 using ::testing::Eq;
-using ::testing::Matcher;
 using ::testing::Not;
 using ::testing::Pair;
 using ::testing::Property;
-using ::testing::Truly;
+using ::testing::ResultOf;
 
 template <typename T>
-Matcher<std::optional<T>> NullOpt() {
+::testing::Matcher<std::optional<T>> NullOpt() {
   return Property(&std::optional<T>::has_value, Eq(false));
 }
 
-template <typename T>
-Matcher<std::optional<T>> Optional(const T& expected) {
-  return AllOf(Not(NullOpt<T>()), Truly([&expected](const auto actual) {
-                 return actual.value() == expected;
-               }));
+template <typename T, typename Matcher>
+::testing::Matcher<std::optional<T>> Optional(const Matcher& matcher) {
+  struct Value {
+    using result_type = const T&;
+    const T& operator()(const std::optional<T>& actual) const {
+      return actual.value();
+    }
+  };
+
+  return AllOf(Not(NullOpt<T>()), ResultOf(Value{}, matcher));
 }
+
+// template <typename T>
+// Matcher<std::optional<T>> Optional(const T& expected) {
+//   return AllOf(Not(NullOpt<T>()), Eq(expected));
+// }
 
 TEST(ThatIter, createsAVectorIterator) {
   EXPECT_THAT(iter(std::vector<uint32_t>{}), A<VectorIterator<uint32_t>>());
@@ -52,7 +62,7 @@ TEST_F(ThatVectorIteratorNext, returnsNulloptIfEmpty) {
 }
 
 TEST_F(ThatVectorIteratorNext, returnsFirstValue) {
-  EXPECT_THAT(vector_iter_.next(), Optional<uint32_t>(1));
+  EXPECT_THAT(vector_iter_.next(), Optional<uint32_t>(Eq(1)));
 }
 
 TEST_F(ThatVectorIteratorNext, returnsMiddleValueIfAlreadyCalled) {
@@ -186,7 +196,7 @@ TEST_F(ThatZipIteratorNext, returnsZippedValues) {
 
   auto vector_iter_2 = iter(std::vector<uint32_t>{5, 6, 7, 8});
   auto zip_iter = vector_iter_ | zip(vector_iter_2);
-  EXPECT_THAT(zip_iter.next(), Optional(std::make_pair(1u, 5u)));
+  EXPECT_THAT(zip_iter.next(), Optional<value_type>(::testing::Pair(1u, 5u)));
 }
 
 TEST_F(ThatZipIteratorNext, returnsNoneIfFirstEnds) {
@@ -214,18 +224,13 @@ TEST_F(ThatZipIteratorNext, returnsNoneIfSecondEnds) {
 
 using ThatMapIteratorNext = ThatVectorIteratorNext;
 
-struct Squared {
-  uint32_t value;
-
-  bool operator==(const Squared& other) const { return value == other.value; }
-};
-
 TEST_F(ThatMapIteratorNext, returnsTransformedValue) {
-  auto map_iter =
-      vector_iter_ | map([](const auto in) { return Squared{in * in}; });
-  EXPECT_THAT(map_iter.next(), Optional(Squared{1}));
-  EXPECT_THAT(map_iter.next(), Optional(Squared{4}));
-  EXPECT_THAT(map_iter.next(), Optional(Squared{9}));
-  EXPECT_THAT(map_iter.next(), Optional(Squared{16}));
-  EXPECT_THAT(map_iter.next(), NullOpt<Squared>());
+  auto map_iter = vector_iter_ | map([](const auto in) {
+                    return std::sqrt(static_cast<double>(in));
+                  });
+  EXPECT_THAT(map_iter.next(), Optional<double>(DoubleNear(1.0, 1e-9)));
+  EXPECT_THAT(map_iter.next(), Optional<double>(DoubleNear(1.414213562, 1e-9)));
+  EXPECT_THAT(map_iter.next(), Optional<double>(DoubleNear(1.732050808, 1e-9)));
+  EXPECT_THAT(map_iter.next(), Optional<double>(DoubleNear(2.0, 1e-9)));
+  EXPECT_THAT(map_iter.next(), NullOpt<double>());
 }
