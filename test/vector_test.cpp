@@ -10,6 +10,7 @@
 // Local includes
 #include "chain.hpp"
 #include "iterator.hpp"
+#include "map.hpp"
 #include "step_by.hpp"
 #include "vector_iterator.hpp"
 #include "zip.hpp"
@@ -209,4 +210,22 @@ TEST_F(ThatZipIteratorNext, returnsNoneIfSecondEnds) {
   zip_iter.next();
   zip_iter.next();
   EXPECT_THAT(zip_iter.next(), NullOpt<value_type>());
+}
+
+using ThatMapIteratorNext = ThatVectorIteratorNext;
+
+struct Squared {
+  uint32_t value;
+
+  bool operator==(const Squared& other) const { return value == other.value; }
+};
+
+TEST_F(ThatMapIteratorNext, returnsTransformedValue) {
+  auto map_iter =
+      vector_iter_ | map([](const auto in) { return Squared{in * in}; });
+  EXPECT_THAT(map_iter.next(), Optional(Squared{1}));
+  EXPECT_THAT(map_iter.next(), Optional(Squared{4}));
+  EXPECT_THAT(map_iter.next(), Optional(Squared{9}));
+  EXPECT_THAT(map_iter.next(), Optional(Squared{16}));
+  EXPECT_THAT(map_iter.next(), NullOpt<Squared>());
 }
