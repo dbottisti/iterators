@@ -1,5 +1,6 @@
 #include <array>
 #include <cstdint>
+#include <limits>
 #include <optional>
 
 #include <catch2/catch_test_macros.hpp>
@@ -38,10 +39,27 @@ public:
         auto accum = init;
         while (true) {
             const auto maybe_x = self().next();
-            if (!maybe_x.has_value()) {
+            if (!maybe_x) {
                 return accum;
             }
             accum = f(accum, *maybe_x);
+        }
+    }
+
+    template <typename B, typename F>
+    auto try_fold(const B init, F f) -> decltype(f(init, std::declval<T>())) {
+        auto accum = init;
+        while (true) {
+            const auto maybe_x = self().next();
+            if (!maybe_x) {
+                return accum;
+            }
+
+            const auto maybe_accum = f(accum, *maybe_x);
+            if (!maybe_accum) {
+                return maybe_accum;
+            }
+            accum = *maybe_accum;
         }
     }
 
@@ -181,4 +199,89 @@ TEST_CASE("collect into generic", "[collect]") {
     REQUIRE(collected[5] == xs[5]);
     REQUIRE(collected[6] == xs[6]);
     REQUIRE(collected[7] == xs[7]);
+}
+
+TEST_CASE("try_fold nominal", "[try_fold]") {
+    const std::array<std::int32_t, 3> a{1, 2, 3};
+
+    const auto checked_add = [](const auto acc, const auto x) -> std::optional<decltype(acc)> {
+        if (x > std::numeric_limits<decltype(acc)>::max() - acc) {
+            return std::nullopt;
+        }
+        return std::make_optional(x + acc);
+    };
+
+    const auto sum = iter::from(a).try_fold(std::int8_t{0}, checked_add);
+    REQUIRE(sum == std::make_optional<std::int8_t>(6));
+}
+
+TEST_CASE("try_fold short-circuiting", "[try_fold]") {
+    const std::array<std::int32_t, 6> a{10, 20, 30, 100, 40, 50};
+
+    const auto checked_add = [](const auto acc, const auto x) -> std::optional<decltype(acc)> {
+        if (x > std::numeric_limits<decltype(acc)>::max() - acc) {
+            return std::nullopt;
+        }
+        return std::make_optional(x + acc);
+    };
+
+    // This sum overflows when adding the 100 element
+    const auto sum = iter::from(a).try_fold(std::int8_t{0}, checked_add);
+}
+
+template <typename T>
+class ControlFlow {
+public:
+    ControlFlow(const T value) : value_{std::move(value)}, state_{State::CONTINUE} {}
+
+    static ControlFlow Continue(const T value) {
+        return ControlFlow{std::move(value), State::CONTINUE};
+    }
+
+    static ControlFlow Break(const T value) { return ControlFlow{std::move(value), State::BREAK}; }
+
+    operator bool() const { return state_ == State::CONTINUE; }
+
+    T operator*() const { return value_; }
+
+private:
+    enum class State { CONTINUE, BREAK };
+
+    ControlFlow(const T value, const State state) : value_{std::move(value)}, state_{state} {}
+
+    T value_;
+    State state_;
+};
+
+#include <iostream>
+
+TEST_CASE("try_fold can be used with any 'try'-like type", "[try_fold]") {
+    const auto checked_add = [](const auto acc, const auto x) -> ControlFlow<decltype(acc)> {
+        using T = decltype(acc);
+        if (acc >= 0) {
+            if (std::numeric_limits<T>::max() - acc < x) {
+                return ControlFlow<T>::Break(acc);
+            }
+        } else {
+            if (x < std::numeric_limits<T>::min() - acc) {
+                return ControlFlow<T>::Break(acc);
+            }
+        }
+        return ControlFlow<T>::Continue(x + acc);
+    };
+
+    const std::array<std::int8_t, 29> a{
+        1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
+        16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+    };
+
+    SECTION("with overflow") {
+        const auto triangular = iter::from(a).try_fold(std::int8_t{0}, checked_add);
+        REQUIRE(triangular == ControlFlow<std::int8_t>::Break(120));
+    }
+
+    SECTION("without overflow") {
+        const auto triangular = iter::from(a).try_fold(std::int64_t{0}, checked_add);
+        REQUIRE(triangular == ControlFlow<std::int64_t>::Continue(435));
+    }
 }
