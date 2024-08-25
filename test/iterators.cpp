@@ -34,6 +34,18 @@ public:
         return ret;
     }
 
+    template <typename B, typename F>
+    B fold(const B init, F f) {
+        auto accum = init;
+        while (true) {
+            const auto maybe_x = self().next();
+            if (!maybe_x.has_value()) {
+                return accum;
+            }
+            accum = f(accum, *maybe_x);
+        }
+    }
+
 private:
     const Self& self() const { return *static_cast<const Self*>(this); }
     Self& self() { return *static_cast<Self*>(this); }
@@ -132,4 +144,9 @@ TEST_CASE("construct from std::array&&", "[construct]") {
 TEST_CASE("count", "[count]") {
     const auto xs = std::array<std::int32_t, 8>{1, 2, 2, 1, 5, 9, 0, 2};
     REQUIRE(iter::from(xs).count() == 8);
+}
+
+TEST_CASE("fold", "[fold]") {
+    const auto xs = std::array<std::int32_t, 8>{1, 2, 2, 1, 5, 9, 0, 2};
+    REQUIRE(iter::from(xs).fold(0, [](const auto acc, const auto x) { return acc + x; }) == 22);
 }
