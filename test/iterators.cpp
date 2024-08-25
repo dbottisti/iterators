@@ -27,11 +27,7 @@ template <typename Self, typename T>
 class Iterator {
 public:
     std::size_t count() {
-        std::size_t ret = 0;
-        while (self().next().has_value()) {
-            ret++;
-        }
-        return ret;
+        return self().fold(0, [](const auto acc, const auto) { return acc + 1; });
     }
 
     template <typename B, typename F>
