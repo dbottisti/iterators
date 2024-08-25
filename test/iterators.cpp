@@ -22,7 +22,7 @@
 
 namespace iter {
 
-template <typename Self, typename Item>
+template <typename Self, typename T>
 class Iterator {
 public:
     std::size_t count() {
@@ -46,8 +46,8 @@ public:
     }
 
     template <template <typename...> typename Collection, typename... Ts>
-    Collection<Item, Ts...> collect() {
-        Collection<Item, Ts...> ret;
+    Collection<T, Ts...> collect() {
+        Collection<T, Ts...> ret;
         while (true) {
             const auto maybe_x = self().next();
             if (maybe_x) {
@@ -70,11 +70,11 @@ class RangeIterator
     : public Iterator<RangeIterator<IteratorType>,
                       std::remove_reference_t<decltype(*std::declval<IteratorType>())>> {
 public:
-    using Item = std::remove_reference_t<decltype(*std::declval<IteratorType>())>;
+    using value_type = std::remove_reference_t<decltype(*std::declval<IteratorType>())>;
 
     RangeIterator(IteratorType current, IteratorType end) : current_{current}, end_{end} {}
 
-    std::optional<Item> next() {
+    std::optional<value_type> next() {
         if (current_ == end_) {
             return std::nullopt;
         }
@@ -94,14 +94,14 @@ class OwningRangeIterator
     using IteratorType = decltype(std::begin(std::declval<Collection>()));
 
 public:
-    using Item = std::remove_reference_t<decltype(*std::declval<IteratorType>())>;
+    using value_type = std::remove_reference_t<decltype(*std::declval<IteratorType>())>;
 
     OwningRangeIterator(Collection collection)
         : collection_{std::move(collection)},
           current_{std::begin(collection_)},
           end_{std::end(collection_)} {}
 
-    std::optional<Item> next() {
+    std::optional<value_type> next() {
         if (current_ == end_) {
             return std::nullopt;
         }
