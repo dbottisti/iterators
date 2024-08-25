@@ -7,8 +7,6 @@
 // Roadmap:
 // - Collect
 // - Filter
-//   - From Array
-//   - count
 //   - fold
 //   - rfold
 //     - next_back (DoubleEndedIterator
@@ -25,10 +23,26 @@
 
 namespace iter {
 
+template <typename Self>
+class Iterator {
+public:
+    std::size_t count() {
+        std::size_t ret = 0;
+        while (self().next().has_value()) {
+            ret++;
+        }
+        return ret;
+    }
+
+private:
+    const Self& self() const { return *static_cast<const Self*>(this); }
+    Self& self() { return *static_cast<Self*>(this); }
+};
+
 namespace detail {
 
 template <typename IteratorType>
-class RangeIterator {
+class RangeIterator : public Iterator<RangeIterator<IteratorType>> {
 public:
     using Item = std::remove_reference_t<decltype(*std::declval<IteratorType>())>;
 
@@ -48,7 +62,7 @@ private:
 };
 
 template <typename Collection>
-class OwningRangeIterator {
+class OwningRangeIterator : public Iterator<OwningRangeIterator<Collection>> {
     using IteratorType = decltype(std::begin(std::declval<Collection>()));
 
 public:
@@ -113,4 +127,9 @@ TEST_CASE("construct from std::array&&", "[construct]") {
     REQUIRE(it.next() == std::make_optional(5));
     REQUIRE(it.next() == std::make_optional(6));
     REQUIRE(it.next() == std::nullopt);
+}
+
+TEST_CASE("count", "[count]") {
+    const auto xs = std::array<std::int32_t, 8>{1, 2, 2, 1, 5, 9, 0, 2};
+    REQUIRE(iter::from(xs).count() == 8);
 }
