@@ -7,7 +7,6 @@
 // Roadmap:
 // - Collect
 // - Filter
-//   - fold
 //   - rfold
 //     - next_back (DoubleEndedIterator
 //   - try_fold
@@ -23,7 +22,7 @@
 
 namespace iter {
 
-template <typename Self>
+template <typename Self, typename Item>
 class Iterator {
 public:
     std::size_t count() {
@@ -46,6 +45,19 @@ public:
         }
     }
 
+    template <template <typename...> typename Collection, typename... Ts>
+    Collection<Item, Ts...> collect() {
+        Collection<Item, Ts...> ret;
+        while (true) {
+            const auto maybe_x = self().next();
+            if (maybe_x) {
+                ret.push_back(*maybe_x);
+            } else {
+                return ret;
+            }
+        }
+    }
+
 private:
     const Self& self() const { return *static_cast<const Self*>(this); }
     Self& self() { return *static_cast<Self*>(this); }
@@ -54,7 +66,9 @@ private:
 namespace detail {
 
 template <typename IteratorType>
-class RangeIterator : public Iterator<RangeIterator<IteratorType>> {
+class RangeIterator
+    : public Iterator<RangeIterator<IteratorType>,
+                      std::remove_reference_t<decltype(*std::declval<IteratorType>())>> {
 public:
     using Item = std::remove_reference_t<decltype(*std::declval<IteratorType>())>;
 
@@ -74,7 +88,9 @@ private:
 };
 
 template <typename Collection>
-class OwningRangeIterator : public Iterator<OwningRangeIterator<Collection>> {
+class OwningRangeIterator
+    : public Iterator<OwningRangeIterator<Collection>,
+                      std::remove_reference_t<decltype(*std::begin(std::declval<Collection>()))>> {
     using IteratorType = decltype(std::begin(std::declval<Collection>()));
 
 public:
@@ -149,4 +165,20 @@ TEST_CASE("count", "[count]") {
 TEST_CASE("fold", "[fold]") {
     const auto xs = std::array<std::int32_t, 8>{1, 2, 2, 1, 5, 9, 0, 2};
     REQUIRE(iter::from(xs).fold(0, [](const auto acc, const auto x) { return acc + x; }) == 22);
+}
+
+TEST_CASE("collect into generic", "[collect]") {
+    const auto xs = std::array<std::int32_t, 8>{1, 2, 2, 1, 5, 9, 0, 2};
+
+    const auto collected = iter::from(xs).collect<std::vector>();
+    static_assert(std::is_same_v<decltype(collected), const std::vector<const std::int32_t>>,
+                  "collect does not return a vector");
+    REQUIRE(collected[0] == xs[0]);
+    REQUIRE(collected[1] == xs[1]);
+    REQUIRE(collected[2] == xs[2]);
+    REQUIRE(collected[3] == xs[3]);
+    REQUIRE(collected[4] == xs[4]);
+    REQUIRE(collected[5] == xs[5]);
+    REQUIRE(collected[6] == xs[6]);
+    REQUIRE(collected[7] == xs[7]);
 }
