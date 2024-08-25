@@ -50,14 +50,17 @@ TEST_CASE("count", "[count]") {
 
 TEST_CASE("fold", "[fold]") {
     const auto xs = std::array<std::int32_t, 8>{1, 2, 2, 1, 5, 9, 0, 2};
-    REQUIRE(iter::from(xs).fold(0, [](const auto acc, const auto x) { return acc + x; }) == 22);
+    REQUIRE(iter::from(xs).fold(0, [](const auto acc, const auto x) {
+        return acc + x;
+    }) == 22);
 }
 
 TEST_CASE("collect into generic", "[collect]") {
     const auto xs = std::array<std::int32_t, 8>{1, 2, 2, 1, 5, 9, 0, 2};
 
     const auto collected = iter::from(xs).collect<std::vector>();
-    static_assert(std::is_same_v<decltype(collected), const std::vector<const std::int32_t>>,
+    static_assert(std::is_same_v<decltype(collected),
+                                 const std::vector<const std::int32_t>>,
                   "collect does not return a vector");
     REQUIRE(collected[0] == xs[0]);
     REQUIRE(collected[1] == xs[1]);
@@ -72,7 +75,8 @@ TEST_CASE("collect into generic", "[collect]") {
 TEST_CASE("try_fold nominal", "[try_fold]") {
     const std::array<std::int32_t, 3> a{1, 2, 3};
 
-    const auto checked_add = [](const auto acc, const auto x) -> std::optional<decltype(acc)> {
+    const auto checked_add
+        = [](const auto acc, const auto x) -> std::optional<decltype(acc)> {
         if (x > std::numeric_limits<decltype(acc)>::max() - acc) {
             return std::nullopt;
         }
@@ -86,7 +90,8 @@ TEST_CASE("try_fold nominal", "[try_fold]") {
 TEST_CASE("try_fold short-circuiting", "[try_fold]") {
     const std::array<std::int32_t, 6> a{10, 20, 30, 100, 40, 50};
 
-    const auto checked_add = [](const auto acc, const auto x) -> std::optional<decltype(acc)> {
+    const auto checked_add
+        = [](const auto acc, const auto x) -> std::optional<decltype(acc)> {
         if (x > std::numeric_limits<decltype(acc)>::max() - acc) {
             return std::nullopt;
         }
@@ -100,13 +105,16 @@ TEST_CASE("try_fold short-circuiting", "[try_fold]") {
 template <typename T>
 class ControlFlow {
 public:
-    ControlFlow(const T value) : value_{std::move(value)}, state_{State::CONTINUE} {}
+    ControlFlow(const T value)
+        : value_{std::move(value)}, state_{State::CONTINUE} {}
 
     static ControlFlow Continue(const T value) {
         return ControlFlow{std::move(value), State::CONTINUE};
     }
 
-    static ControlFlow Break(const T value) { return ControlFlow{std::move(value), State::BREAK}; }
+    static ControlFlow Break(const T value) {
+        return ControlFlow{std::move(value), State::BREAK};
+    }
 
     operator bool() const { return state_ == State::CONTINUE; }
 
@@ -115,7 +123,8 @@ public:
 private:
     enum class State { CONTINUE, BREAK };
 
-    ControlFlow(const T value, const State state) : value_{std::move(value)}, state_{state} {}
+    ControlFlow(const T value, const State state)
+        : value_{std::move(value)}, state_{state} {}
 
     T value_;
     State state_;
@@ -124,7 +133,8 @@ private:
 #include <iostream>
 
 TEST_CASE("try_fold can be used with any 'try'-like type", "[try_fold]") {
-    const auto checked_add = [](const auto acc, const auto x) -> ControlFlow<decltype(acc)> {
+    const auto checked_add
+        = [](const auto acc, const auto x) -> ControlFlow<decltype(acc)> {
         using T = decltype(acc);
         if (acc >= 0) {
             if (std::numeric_limits<T>::max() - acc < x) {
@@ -144,12 +154,14 @@ TEST_CASE("try_fold can be used with any 'try'-like type", "[try_fold]") {
     };
 
     SECTION("with overflow") {
-        const auto triangular = iter::from(a).try_fold(std::int8_t{0}, checked_add);
+        const auto triangular
+            = iter::from(a).try_fold(std::int8_t{0}, checked_add);
         REQUIRE(triangular == ControlFlow<std::int8_t>::Break(120));
     }
 
     SECTION("without overflow") {
-        const auto triangular = iter::from(a).try_fold(std::int64_t{0}, checked_add);
+        const auto triangular
+            = iter::from(a).try_fold(std::int64_t{0}, checked_add);
         REQUIRE(triangular == ControlFlow<std::int64_t>::Continue(435));
     }
 }

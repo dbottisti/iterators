@@ -7,7 +7,8 @@ template <typename Self, typename T>
 class Iterator {
 public:
     std::size_t count() {
-        return self().fold(0, [](const auto acc, const auto) { return acc + 1; });
+        return self().fold(0,
+                           [](const auto acc, const auto) { return acc + 1; });
     }
 
     template <typename B, typename F>

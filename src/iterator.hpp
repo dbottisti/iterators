@@ -11,7 +11,9 @@ public:
 
     virtual std::optional<T> next() = 0;
 
-    virtual std::pair<size_t, std::optional<size_t>> size_hint() const { return {0, std::nullopt}; }
+    virtual std::pair<size_t, std::optional<size_t>> size_hint() const {
+        return {0, std::nullopt};
+    }
 
     virtual size_t count() {
         auto count = 0;

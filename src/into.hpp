@@ -9,12 +9,15 @@ namespace detail {
 
 template <typename IteratorType>
 class RangeIterator
-    : public Iterator<RangeIterator<IteratorType>,
-                      std::remove_reference_t<decltype(*std::declval<IteratorType>())>> {
+    : public Iterator<
+          RangeIterator<IteratorType>,
+          std::remove_reference_t<decltype(*std::declval<IteratorType>())>> {
 public:
-    using value_type = std::remove_reference_t<decltype(*std::declval<IteratorType>())>;
+    using value_type
+        = std::remove_reference_t<decltype(*std::declval<IteratorType>())>;
 
-    RangeIterator(IteratorType current, IteratorType end) : current_{current}, end_{end} {}
+    RangeIterator(IteratorType current, IteratorType end)
+        : current_{current}, end_{end} {}
 
     std::optional<value_type> next() {
         if (current_ == end_) {
@@ -32,11 +35,13 @@ private:
 template <typename Collection>
 class OwningRangeIterator
     : public Iterator<OwningRangeIterator<Collection>,
-                      std::remove_reference_t<decltype(*std::begin(std::declval<Collection>()))>> {
+                      std::remove_reference_t<decltype(*std::begin(
+                          std::declval<Collection>()))>> {
     using IteratorType = decltype(std::begin(std::declval<Collection>()));
 
 public:
-    using value_type = std::remove_reference_t<decltype(*std::declval<IteratorType>())>;
+    using value_type
+        = std::remove_reference_t<decltype(*std::declval<IteratorType>())>;
 
     OwningRangeIterator(Collection collection)
         : collection_{std::move(collection)},
@@ -61,15 +66,17 @@ private:
 
 template <typename Collection>
 auto from(Collection&& collection)
-    -> std::enable_if_t<!std::is_rvalue_reference<Collection&&>::value,
-                        detail::RangeIterator<decltype(std::begin(collection))>> {
+    -> std::enable_if_t<
+        !std::is_rvalue_reference<Collection&&>::value,
+        detail::RangeIterator<decltype(std::begin(collection))>> {
     return {std::begin(collection), std::end(collection)};
 }
 
 template <typename Collection>
 auto from(Collection&& collection)
-    -> std::enable_if_t<std::is_rvalue_reference<Collection&&>::value,
-                        detail::OwningRangeIterator<std::remove_reference_t<Collection>>> {
+    -> std::enable_if_t<
+        std::is_rvalue_reference<Collection&&>::value,
+        detail::OwningRangeIterator<std::remove_reference_t<Collection>>> {
     return {std::move(collection)};
 }
 
