@@ -6,8 +6,5 @@ add_library(iter INTERFACE)
 target_include_directories(iter INTERFACE ${CMAKE_SOURCE_DIR}/src)
 
 # Tests
-find_package(GTest REQUIRED)
-add_subdirectory(
-  /usr/src/googletest
-  ${CMAKE_BINARY_DIR}/googletest EXCLUDE_FROM_ALL)
+enable_testing()
 add_subdirectory(test)

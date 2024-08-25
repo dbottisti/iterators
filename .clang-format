@@ -1,0 +1,30 @@
+---
+  BasedOnStyle: Google
+  AccessModifierOffset: '-4'
+  AlignTrailingComments: 'true'
+  AllowAllParametersOfDeclarationOnNextLine: 'false'
+  AlwaysBreakTemplateDeclarations: Yes
+  BreakBeforeBraces: Attach
+  ColumnLimit: '100'
+  ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
+  IncludeBlocks: Regroup
+  IndentPPDirectives: AfterHash
+  IndentWidth: '4'
+  NamespaceIndentation: None
+  BreakBeforeBinaryOperators: All
+  BreakBeforeTernaryOperators: 'true'
+  SortIncludes: CaseInsensitive
+  IncludeCategories:
+    - Regex: '^"'
+      Priority: 2
+      SortPriority: 2
+      CaseSensitive: false
+    - Regex: '^<.*\.(h|hpp)>$'
+      Priority: 1
+      SortPriority: 1
+      CaseSensitive: false
+    - Regex: '.*'
+      Priority: 0
+      SortPriority: 0
+      CaseSensitive: false
+...
