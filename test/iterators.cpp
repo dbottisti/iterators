@@ -27,9 +27,7 @@ struct StringMaker<std::optional<T>> {
 // Roadmap:
 // - Filter
 //   - rfold
-//     - next_back (DoubleEndedIterator
 //   - try_rfold
-//     - next_back (DoubleEndedIterator)
 //   - next_chunk
 //   - as an STL-style iterators
 // - Map
@@ -207,4 +205,22 @@ TEST_CASE("next_back (owning)", "[next_back]") {
     REQUIRE(itr.next() == std::make_optional(4));
     REQUIRE(itr.next() == std::nullopt);
     REQUIRE(itr.next_back() == std::nullopt);
+}
+
+TEST_CASE("rvold", "[rfold]") {
+    const std::array<std::int32_t, 3> a{1, 2, 3};
+    const auto sum = iter::from(a).rfold(
+        0, [](const auto acc, const auto x) { return acc + x; });
+
+    REQUIRE(sum == 6);
+}
+
+TEST_CASE("rvold is right associative", "[rfold]") {
+    const std::array<std::int32_t, 5> a{1, 2, 3, 4, 5};
+
+    const auto result = iter::from(a).rfold(
+        std::to_string(0),
+        [](const auto acc, const auto x) { return acc + std::to_string(x); });
+
+    REQUIRE(result == "054321");
 }
