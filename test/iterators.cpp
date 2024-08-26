@@ -41,11 +41,9 @@ const auto checked_add
 
 // Roadmap:
 // - Filter
-//   - try_rfold
 //   - next_chunk
 //   - as an STL-style iterators
 // - Map
-//   - try_rfold
 
 TEST_CASE("construct from std::array reference", "[construct]") {
     std::array<std::uint32_t, 6> xs{1, 2, 3, 4, 5, 6};
@@ -220,4 +218,22 @@ TEST_CASE("rfold is right associative", "[rfold]") {
         [](const auto acc, const auto x) { return acc + std::to_string(x); });
 
     REQUIRE(result == "054321");
+}
+
+TEST_CASE("try_rfold", "[try_rfold]") {
+    const std::array<std::int8_t, 3> a{1, 2, 3};
+    const auto sum = iter::from(a).try_rfold(std::int8_t{0}, checked_add);
+
+    REQUIRE(sum == std::make_optional(6));
+}
+
+TEST_CASE("try_rfold short-circuiting", "[try_rfold]") {
+    const std::array<std::int8_t, 6> a{10, 20, 30, 100, 40, 50};
+
+    auto it = iter::from(a);
+    const auto sum = it.try_rfold(std::int8_t{0}, checked_add);
+
+    REQUIRE(sum == std::nullopt);
+
+    REQUIRE(it.next_back() == std::make_optional(30));
 }
