@@ -24,15 +24,28 @@ struct StringMaker<std::optional<T>> {
 
 }  // namespace Catch
 
+const auto checked_add
+    = [](const auto acc, const auto x) -> std::optional<decltype(acc)> {
+    using T = decltype(acc);
+    if (acc >= 0) {
+        if (std::numeric_limits<T>::max() - acc < x) {
+            return std::nullopt;
+        }
+    } else {
+        if (x < std::numeric_limits<T>::min() - acc) {
+            return std::nullopt;
+        }
+    }
+    return std::make_optional(x + acc);
+};
+
 // Roadmap:
 // - Filter
-//   - rfold
 //   - try_rfold
 //   - next_chunk
 //   - as an STL-style iterators
 // - Map
 //   - try_rfold
-//     - next_back (DoubleEndedIterator)
 
 TEST_CASE("construct from std::array reference", "[construct]") {
     std::array<std::uint32_t, 6> xs{1, 2, 3, 4, 5, 6};
@@ -90,28 +103,12 @@ TEST_CASE("collect into generic", "[collect]") {
 TEST_CASE("try_fold nominal", "[try_fold]") {
     const std::array<std::int32_t, 3> a{1, 2, 3};
 
-    const auto checked_add
-        = [](const auto acc, const auto x) -> std::optional<decltype(acc)> {
-        if (x > std::numeric_limits<decltype(acc)>::max() - acc) {
-            return std::nullopt;
-        }
-        return std::make_optional(x + acc);
-    };
-
     const auto sum = iter::from(a).try_fold(std::int8_t{0}, checked_add);
     REQUIRE(sum == std::make_optional<std::int8_t>(6));
 }
 
 TEST_CASE("try_fold short-circuiting", "[try_fold]") {
     const std::array<std::int32_t, 6> a{10, 20, 30, 100, 40, 50};
-
-    const auto checked_add
-        = [](const auto acc, const auto x) -> std::optional<decltype(acc)> {
-        if (x > std::numeric_limits<decltype(acc)>::max() - acc) {
-            return std::nullopt;
-        }
-        return std::make_optional(x + acc);
-    };
 
     // This sum overflows when adding the 100 element
     const auto sum = iter::from(a).try_fold(std::int8_t{0}, checked_add);
@@ -207,7 +204,7 @@ TEST_CASE("next_back (owning)", "[next_back]") {
     REQUIRE(itr.next_back() == std::nullopt);
 }
 
-TEST_CASE("rvold", "[rfold]") {
+TEST_CASE("rfold", "[rfold]") {
     const std::array<std::int32_t, 3> a{1, 2, 3};
     const auto sum = iter::from(a).rfold(
         0, [](const auto acc, const auto x) { return acc + x; });
@@ -215,7 +212,7 @@ TEST_CASE("rvold", "[rfold]") {
     REQUIRE(sum == 6);
 }
 
-TEST_CASE("rvold is right associative", "[rfold]") {
+TEST_CASE("rfold is right associative", "[rfold]") {
     const std::array<std::int32_t, 5> a{1, 2, 3, 4, 5};
 
     const auto result = iter::from(a).rfold(
