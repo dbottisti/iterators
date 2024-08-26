@@ -7,6 +7,23 @@
 
 #include "iterator.hpp"
 
+namespace Catch {
+
+template <typename T>
+struct StringMaker<std::optional<T>> {
+    static auto convert(std::optional<T> const& o) -> std::string {
+        ReusableStringStream rss;
+        if (o) {
+            rss << "Some(" << Detail::stringify(*o) << ')';
+        } else {
+            rss << "None";
+        }
+        return rss.str();
+    }
+};
+
+}  // namespace Catch
+
 // Roadmap:
 // - Filter
 //   - rfold
@@ -130,8 +147,6 @@ private:
     State state_;
 };
 
-#include <iostream>
-
 TEST_CASE("try_fold can be used with any 'try'-like type", "[try_fold]") {
     const auto checked_add
         = [](const auto acc, const auto x) -> ControlFlow<decltype(acc)> {
@@ -164,4 +179,19 @@ TEST_CASE("try_fold can be used with any 'try'-like type", "[try_fold]") {
             = iter::from(a).try_fold(std::int64_t{0}, checked_add);
         REQUIRE(triangular == ControlFlow<std::int64_t>::Continue(435));
     }
+}
+
+TEST_CASE("next_back", "[next_back]") {
+    const std::array<std::int32_t, 6> a{1, 2, 3, 4, 5, 6};
+
+    auto itr = iter::from(a);
+
+    REQUIRE(itr.next() == std::make_optional(1));
+    REQUIRE(itr.next_back() == std::make_optional(6));
+    REQUIRE(itr.next_back() == std::make_optional(5));
+    REQUIRE(itr.next() == std::make_optional(2));
+    REQUIRE(itr.next() == std::make_optional(3));
+    REQUIRE(itr.next() == std::make_optional(4));
+    REQUIRE(itr.next() == std::nullopt);
+    REQUIRE(itr.next_back() == std::nullopt);
 }

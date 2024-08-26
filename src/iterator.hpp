@@ -2,7 +2,8 @@
 #define ITERATORS_ITERATOR_HPP
 
 #include "base.hpp"
-#include "into.hpp"
+#include "double_ended.hpp"
+#include "from.hpp"
 
 template <typename T, typename Self>
 class Iterator {

@@ -2,8 +2,10 @@
 #define ITERATORS_INTO_HPP
 
 #include "base.hpp"
+#include "detail/double_ended_range_iterator.hpp"
 #include "detail/owning_range_iterator.hpp"
 #include "detail/range_iterator.hpp"
+#include "detail/traits.hpp"
 
 namespace iter {
 
@@ -11,7 +13,10 @@ template <typename Collection>
 auto from(Collection&& collection)
     -> std::enable_if_t<
         !std::is_rvalue_reference<Collection&&>::value,
-        detail::RangeIterator<decltype(std::begin(collection))>> {
+        std::conditional_t<
+            detail::is_decrementable<decltype(std::begin(collection))>::value,
+            detail::DoubleEndedRangeIterator<decltype(std::begin(collection))>,
+            detail::RangeIterator<decltype(std::begin(collection))>>> {
     return {std::begin(collection), std::end(collection)};
 }
 
