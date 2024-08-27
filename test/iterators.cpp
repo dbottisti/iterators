@@ -302,16 +302,16 @@ TEST_CASE("map try_folds", "[map][try_fold]") {
     }
 }
 
-// TEST_CASE("double-ended map", "[map][next_back]") {
-//     auto itr = iter::from(std::array<std::int32_t, 6>{1, 2, 3, 4, 5, 6})
-//                    .map([](const auto x) { return x * -1; });
+TEST_CASE("double-ended map", "[map][next_back]") {
+    auto itr = iter::from(std::array<std::int32_t, 6>{1, 2, 3, 4, 5, 6})
+                   .map([](const auto x) { return x * -1; });
 
-//     REQUIRE(itr.next() == std::make_optional(-1));
-//     REQUIRE(itr.next_back() == std::make_optional(-6));
-//     REQUIRE(itr.next_back() == std::make_optional(-5));
-//     REQUIRE(itr.next() == std::make_optional(-2));
-//     REQUIRE(itr.next() == std::make_optional(-3));
-//     REQUIRE(itr.next() == std::make_optional(-4));
-//     REQUIRE(itr.next() == std::nullopt);
-//     REQUIRE(itr.next_back() == std::nullopt);
-// }
+    REQUIRE(itr.next() == std::make_optional(-1));
+    REQUIRE(itr.next_back() == std::make_optional(-6));
+    REQUIRE(itr.next_back() == std::make_optional(-5));
+    REQUIRE(itr.next() == std::make_optional(-2));
+    REQUIRE(itr.next() == std::make_optional(-3));
+    REQUIRE(itr.next() == std::make_optional(-4));
+    REQUIRE(itr.next() == std::nullopt);
+    REQUIRE(itr.next_back() == std::nullopt);
+}
