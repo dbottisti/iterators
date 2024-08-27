@@ -4,8 +4,11 @@
 #include <optional>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_all.hpp>
 
 #include "iterator.hpp"
+
+using Catch::Matchers::Equals;
 
 namespace Catch {
 
@@ -18,6 +21,16 @@ struct StringMaker<std::optional<T>> {
         } else {
             rss << "None";
         }
+        return rss.str();
+    }
+};
+
+template <typename T, typename U>
+struct StringMaker<std::pair<T, U>> {
+    static auto convert(std::pair<T, U> const& pair) -> std::string {
+        ReusableStringStream rss;
+        rss << "(" << Detail::stringify(pair.first) << ", "
+            << Detail::stringify(pair.second) << ")";
         return rss.str();
     }
 };
@@ -43,7 +56,6 @@ const auto checked_add
 // - Filter
 //   - next_chunk
 //   - as an STL-style iterators
-// - Map
 
 TEST_CASE("construct from std::array reference", "[construct]") {
     std::array<std::uint32_t, 6> xs{1, 2, 3, 4, 5, 6};
@@ -237,3 +249,69 @@ TEST_CASE("try_rfold short-circuiting", "[try_rfold]") {
 
     REQUIRE(it.next_back() == std::make_optional(30));
 }
+
+TEST_CASE("map basic", "[map]") {
+    const auto v = iter::from(std::array<std::int8_t, 3>{1, 2, 3})
+                       .map([](const auto x) { return x + 1; })
+                       .collect<std::vector<const std::int8_t>>();
+
+    REQUIRE_THAT(v, Equals(std::vector<const std::int8_t>{2, 3, 4}));
+}
+
+TEST_CASE("map with state", "[map]") {
+    std::uint32_t c = 0;
+    const auto v = iter::from(std::array<char, 3>{'a', 'b', 'c'})
+                       .map([&](const auto letter) {
+                           c += 1;
+                           return std::make_pair(letter, c);
+                       })
+                       .collect<std::vector>();
+
+    REQUIRE_THAT(v, Equals(std::vector<std::pair<char, std::uint32_t>>{
+                        {'a', 1}, {'b', 2}, {'c', 3}}));
+}
+
+TEST_CASE("map try_folds", "[map][try_fold]") {
+    SECTION("Without overflow") {
+        const std::array<std::int8_t, 3> a{1, 2, 3};
+        REQUIRE(iter::from(a)
+                    .map([](const auto x) { return x * 10; })
+                    .try_fold(std::int8_t{0}, checked_add)
+                == std::make_optional(60));
+    }
+
+    SECTION("With overflow") {
+        const std::array<std::int8_t, 6> a{1, 2, 3, 10, 4, 5};
+        REQUIRE(iter::from(a)
+                    .map([](const auto x) { return x * 10; })
+                    .try_fold(std::int8_t{0}, checked_add)
+                == std::nullopt);
+    }
+
+    SECTION("continuing after overflow") {
+        const std::array<std::int8_t, 40> a{
+            0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13,
+            14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+            28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+        };
+        auto it = iter::from(a).map([](const auto x) { return x + 10; });
+        REQUIRE(it.try_fold(std::int8_t{0}, checked_add) == std::nullopt);
+        REQUIRE(it.next() == std::make_optional(20));
+        REQUIRE(it.try_rfold(std::int8_t{0}, checked_add) == std::nullopt);
+        REQUIRE(it.next_back() == std::make_optional(46));
+    }
+}
+
+// TEST_CASE("double-ended map", "[map][next_back]") {
+//     auto itr = iter::from(std::array<std::int32_t, 6>{1, 2, 3, 4, 5, 6})
+//                    .map([](const auto x) { return x * -1; });
+
+//     REQUIRE(itr.next() == std::make_optional(-1));
+//     REQUIRE(itr.next_back() == std::make_optional(-6));
+//     REQUIRE(itr.next_back() == std::make_optional(-5));
+//     REQUIRE(itr.next() == std::make_optional(-2));
+//     REQUIRE(itr.next() == std::make_optional(-3));
+//     REQUIRE(itr.next() == std::make_optional(-4));
+//     REQUIRE(itr.next() == std::nullopt);
+//     REQUIRE(itr.next_back() == std::nullopt);
+// }

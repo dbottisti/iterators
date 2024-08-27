@@ -6,6 +6,8 @@ namespace iter {
 template <typename Self, typename T>
 class DoubleEndedIterator {
 public:
+    static constexpr bool is_double_ended_iterator = true;
+
     template <typename B, typename F>
     B rfold(const B init, F f) {
         auto accum = init;

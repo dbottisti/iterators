@@ -1,11 +1,24 @@
 #ifndef ITERATORS_BASE_HPP
 #define ITERATORS_BASE_HPP
 
+#include "detail/empty_base.hpp"
+#include "detail/traits.hpp"
+#include "double_ended.hpp"
+
 namespace iter {
+
+// ---------------------------- Forward declarations ---------------------------
+
+template <typename F, typename BaseIterator, typename Enable = void>
+class Map;
+
+// ---------------------------------- Iterator ---------------------------------
 
 template <typename Self, typename T>
 class Iterator {
 public:
+    static constexpr bool is_iterator = true;
+
     std::size_t count() {
         return self().fold(std::size_t{0},
                            [](const auto acc, const auto) { return acc + 1; });
@@ -42,7 +55,12 @@ public:
 
     template <template <typename...> typename Collection, typename... Ts>
     Collection<T, Ts...> collect() {
-        Collection<T, Ts...> ret;
+        return collect<Collection<T, Ts...>>();
+    }
+
+    template <typename Collection>
+    Collection collect() {
+        Collection ret;
         while (true) {
             const auto maybe_x = self().next();
             if (maybe_x) {
@@ -53,9 +71,108 @@ public:
         }
     }
 
+    template <typename F>
+    Map<F, Self> map(F&& f) && {
+        return Map<F, Self>{std::forward<F>(f), self()};
+    }
+
+    template <typename F>
+    Map<F, Self&> map(F&& f) & {
+        return Map<F, Self&>{std::forward<F>(f), self()};
+    }
+
 private:
     const Self& self() const { return *static_cast<const Self*>(this); }
     Self& self() { return *static_cast<Self*>(this); }
+};
+
+// ------------------------------------ Map ------------------------------------
+
+template <typename Function, typename BaseIterator, typename Enable>
+class Map : public Iterator<
+                Map<Function, BaseIterator>,
+                std::invoke_result_t<Function, typename std::remove_reference_t<
+                                                   BaseIterator>::value_type>> {
+    using BaseNoRef = std::remove_reference_t<BaseIterator>;
+
+public:
+    static_assert(
+        std::is_invocable_v<Function, typename std::remove_reference_t<
+                                          BaseIterator>::value_type>,
+        "Function provided to map() is incompatible with the value type of the "
+        "iterator");
+    using value_type
+        = std::invoke_result_t<Function, typename BaseNoRef::value_type>;
+
+    Map(Function function, BaseNoRef&& base_iterator)
+        : base_iterator_{std::move(base_iterator)},
+          function_{std::move(function)} {}
+
+    Map(Function function, BaseNoRef& base_iterator)
+        : base_iterator_{base_iterator}, function_{std::move(function)} {}
+
+    std::optional<value_type> next() {
+        auto first = base_iterator_.next();
+        if (first) {
+            return function_(first.value());
+        }
+        return {};
+    }
+
+private:
+    BaseIterator base_iterator_;
+    Function function_;
+};
+
+template <typename Function, typename BaseIterator>
+class Map<Function, BaseIterator,
+          std::enable_if_t<detail::is_double_ended<
+              std::remove_reference_t<BaseIterator>>::value>>
+    : public Iterator<
+          Map<Function, BaseIterator>,
+          std::invoke_result_t<Function, typename std::remove_reference_t<
+                                             BaseIterator>::value_type>>,
+      public DoubleEndedIterator<
+          Map<Function, BaseIterator>,
+          std::invoke_result_t<Function, typename std::remove_reference_t<
+                                             BaseIterator>::value_type>> {
+    using BaseNoRef = std::remove_reference_t<BaseIterator>;
+
+public:
+    static_assert(
+        std::is_invocable_v<Function, typename std::remove_reference_t<
+                                          BaseIterator>::value_type>,
+        "Function provided to map() is incompatible with the value type of the "
+        "iterator");
+    using value_type
+        = std::invoke_result_t<Function, typename BaseNoRef::value_type>;
+
+    Map(Function function, BaseNoRef&& base_iterator)
+        : base_iterator_{std::move(base_iterator)},
+          function_{std::move(function)} {}
+
+    Map(Function function, BaseNoRef& base_iterator)
+        : base_iterator_{base_iterator}, function_{std::move(function)} {}
+
+    std::optional<value_type> next() {
+        auto first = base_iterator_.next();
+        if (first) {
+            return function_(first.value());
+        }
+        return {};
+    }
+
+    std::optional<value_type> next_back() {
+        auto first = base_iterator_.next_back();
+        if (first) {
+            return function_(first.value());
+        }
+        return {};
+    }
+
+private:
+    BaseIterator base_iterator_;
+    Function function_;
 };
 
 }  // namespace iter
