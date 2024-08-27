@@ -315,3 +315,36 @@ TEST_CASE("double-ended map", "[map][next_back]") {
     REQUIRE(itr.next() == std::nullopt);
     REQUIRE(itr.next_back() == std::nullopt);
 }
+
+TEST_CASE("filter count", "[filter][count]") {
+    const std::array<std::int8_t, 9> xs{0, 1, 2, 3, 4, 5, 6, 7, 8};
+
+    REQUIRE(
+        iter::from(xs).filter([](const auto x) { return x % 2 == 0; }).count()
+        == 5);
+}
+
+TEST_CASE("filter fold", "[filter][fold]") {
+    const std::array<std::int8_t, 9> xs{0, 1, 2, 3, 4, 5, 6, 7, 8};
+    const std::array<std::int8_t, 5> ys{0, 2, 4, 6, 8};
+
+    SECTION("forward") {
+        auto it
+            = iter::from(xs).filter([](const auto x) { return x % 2 == 0; });
+        const auto i = it.fold(0, [&ys](const auto i, const auto x) {
+            REQUIRE(x == ys[i]);
+            return i + 1;
+        });
+        REQUIRE(i == ys.size());
+    }
+
+    SECTION("backwards") {
+        auto it
+            = iter::from(xs).filter([](const auto x) { return x % 2 == 0; });
+        const auto i = it.rfold(ys.size(), [&ys](const auto i, const auto x) {
+            REQUIRE(x == ys[i - 1]);
+            return i - 1;
+        });
+        REQUIRE(i == 0);
+    }
+}
