@@ -94,6 +94,7 @@ class Map : public Iterator<
                 std::invoke_result_t<Function, typename std::remove_reference_t<
                                                    BaseIterator>::value_type>> {
     using BaseNoRef = std::remove_reference_t<BaseIterator>;
+    using T = typename BaseNoRef::value_type;
 
 public:
     static_assert(
@@ -119,6 +120,22 @@ public:
         return {};
     }
 
+    template <typename B, typename F>
+    auto fold(const B init, F f) -> B {
+        return base_iterator_.fold(init,
+                                   [&f, this](const auto acc, const auto x) {
+                                       return f(acc, function_(x));
+                                   });
+    }
+
+    template <typename B, typename F>
+    auto try_fold(const B init, F f) -> decltype(f(init, std::declval<T>())) {
+        return base_iterator_.try_fold(
+            init, [&f, this](const auto acc, const auto x) {
+                return f(acc, function_(x));
+            });
+    }
+
 private:
     BaseIterator base_iterator_;
     Function function_;
@@ -137,6 +154,7 @@ class Map<Function, BaseIterator,
           std::invoke_result_t<Function, typename std::remove_reference_t<
                                              BaseIterator>::value_type>> {
     using BaseNoRef = std::remove_reference_t<BaseIterator>;
+    using T = typename BaseNoRef::value_type;
 
 public:
     static_assert(
@@ -168,6 +186,38 @@ public:
             return function_(first.value());
         }
         return {};
+    }
+
+    template <typename B, typename F>
+    auto fold(const B init, F f) -> B {
+        return base_iterator_.fold(init,
+                                   [&f, this](const auto acc, const auto x) {
+                                       return f(acc, function_(x));
+                                   });
+    }
+
+    template <typename B, typename F>
+    auto try_fold(const B init, F f) -> decltype(f(init, std::declval<T>())) {
+        return base_iterator_.try_fold(
+            init, [&f, this](const auto acc, const auto x) {
+                return f(acc, function_(x));
+            });
+    }
+
+    template <typename B, typename F>
+    auto rfold(const B init, F f) -> B {
+        return base_iterator_.rfold(init,
+                                    [&f, this](const auto acc, const auto x) {
+                                        return f(acc, function_(x));
+                                    });
+    }
+
+    template <typename B, typename F>
+    auto try_rfold(const B init, F f) -> decltype(f(init, std::declval<T>())) {
+        return base_iterator_.try_rfold(
+            init, [&f, this](const auto acc, const auto x) {
+                return f(acc, function_(x));
+            });
     }
 
 private:
