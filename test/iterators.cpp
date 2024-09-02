@@ -9,6 +9,7 @@
 #include "iterator.hpp"
 
 using Catch::Matchers::Equals;
+using Catch::Matchers::RangeEquals;
 
 namespace Catch {
 
@@ -316,6 +317,48 @@ TEST_CASE("double-ended map", "[map][next_back]") {
     REQUIRE(itr.next_back() == std::nullopt);
 }
 
+TEST_CASE("infinite range generator", "[range]") {
+    auto itr = iter::range(0);
+
+    REQUIRE(itr.next() == std::make_optional(0));
+    REQUIRE(itr.next() == std::make_optional(1));
+    REQUIRE(itr.next() == std::make_optional(2));
+    REQUIRE(itr.next() == std::make_optional(3));
+    REQUIRE(itr.next() == std::make_optional(4));
+}
+
+TEST_CASE("finite range generator", "[range]") {
+    auto itr = iter::range(0, 3);
+
+    REQUIRE(itr.next() == std::make_optional(0));
+    REQUIRE(itr.next() == std::make_optional(1));
+    REQUIRE(itr.next() == std::make_optional(2));
+    REQUIRE(itr.next() == std::nullopt);
+    REQUIRE(itr.next() == std::nullopt);
+    REQUIRE(itr.next() == std::nullopt);
+}
+
+TEST_CASE("finite range with skip generator", "[range]") {
+    auto itr = iter::range(0, 10, 3);
+
+    REQUIRE(itr.next() == std::make_optional(0));
+    REQUIRE(itr.next() == std::make_optional(3));
+    REQUIRE(itr.next() == std::make_optional(6));
+    REQUIRE(itr.next() == std::make_optional(9));
+    REQUIRE(itr.next() == std::nullopt);
+}
+
+TEST_CASE("range misc", "[range]") {
+    REQUIRE_THAT(iter::range(0, 5).collect<std::vector>(),
+                 RangeEquals(std::vector<const std::int8_t>{0, 1, 2, 3, 4}));
+    REQUIRE_THAT(iter::range(-10, -1).collect<std::vector>(),
+                 RangeEquals(std::vector<const std::int8_t>{-10, -9, -8, -7, -6,
+                                                            -5, -4, -3, -2}));
+    // TODO (reverse)
+    REQUIRE(iter::range(200, -5).count() == 0);
+    REQUIRE(iter::range(200, 200).count() == 0);
+}
+
 TEST_CASE("filter count", "[filter][count]") {
     const std::array<std::int8_t, 9> xs{0, 1, 2, 3, 4, 5, 6, 7, 8};
 
@@ -347,4 +390,27 @@ TEST_CASE("filter fold", "[filter][fold]") {
         });
         REQUIRE(i == 0);
     }
+}
+
+TEST_CASE("filter try_folds", "[filter][try_fold]") {
+    const auto p = [](const std::int32_t x) { return 0 <= x && x < 10; };
+    const auto f
+        = [](const auto acc, const auto x) { return checked_add(2 * acc, x); };
+
+    REQUIRE(iter::range(-10, 20).filter(p).try_fold(7, f)
+            == iter::range(0, 10).try_fold(7, f));
+
+    auto it
+        = iter::range(0, 40).filter([](const auto x) { return x % 2 == 1; });
+    REQUIRE(it.try_fold<std::int8_t>(0, checked_add) == std::nullopt);
+    REQUIRE(it.next() == std::make_optional(25));
+}
+
+TEST_CASE("double-ended filter", "[filter]") {
+    const auto xs = std::vector<std::uint32_t>{1, 2, 3, 4, 5, 6};
+    auto it = iter::from(xs).filter([](const auto x) { return (x & 1) == 0; });
+    REQUIRE(it.next_back().value() == 6);
+    REQUIRE(it.next_back().value() == 4);
+    REQUIRE(it.next().value() == 2);
+    REQUIRE(it.next_back() == std::nullopt);
 }
