@@ -9,6 +9,7 @@
 #include "iterator.hpp"
 
 using Catch::Matchers::Equals;
+using Catch::Matchers::RangeEquals;
 
 namespace Catch {
 
@@ -314,4 +315,46 @@ TEST_CASE("double-ended map", "[map][next_back]") {
     REQUIRE(itr.next() == std::make_optional(-4));
     REQUIRE(itr.next() == std::nullopt);
     REQUIRE(itr.next_back() == std::nullopt);
+}
+
+TEST_CASE("infinite range generator", "[range]") {
+    auto itr = iter::range(0);
+
+    REQUIRE(itr.next() == std::make_optional(0));
+    REQUIRE(itr.next() == std::make_optional(1));
+    REQUIRE(itr.next() == std::make_optional(2));
+    REQUIRE(itr.next() == std::make_optional(3));
+    REQUIRE(itr.next() == std::make_optional(4));
+}
+
+TEST_CASE("finite range generator", "[range]") {
+    auto itr = iter::range(0, 3);
+
+    REQUIRE(itr.next() == std::make_optional(0));
+    REQUIRE(itr.next() == std::make_optional(1));
+    REQUIRE(itr.next() == std::make_optional(2));
+    REQUIRE(itr.next() == std::nullopt);
+    REQUIRE(itr.next() == std::nullopt);
+    REQUIRE(itr.next() == std::nullopt);
+}
+
+TEST_CASE("finite range with skip generator", "[range]") {
+    auto itr = iter::range(0, 10, 3);
+
+    REQUIRE(itr.next() == std::make_optional(0));
+    REQUIRE(itr.next() == std::make_optional(3));
+    REQUIRE(itr.next() == std::make_optional(6));
+    REQUIRE(itr.next() == std::make_optional(9));
+    REQUIRE(itr.next() == std::nullopt);
+}
+
+TEST_CASE("range misc", "[range]") {
+    REQUIRE_THAT(iter::range(0, 5).collect<std::vector>(),
+                 RangeEquals(std::vector<const std::int8_t>{0, 1, 2, 3, 4}));
+    REQUIRE_THAT(iter::range(-10, -1).collect<std::vector>(),
+                 RangeEquals(std::vector<const std::int8_t>{-10, -9, -8, -7, -6,
+                                                            -5, -4, -3, -2}));
+    // TODO (reverse)
+    REQUIRE(iter::range(200, -5).count() == 0);
+    REQUIRE(iter::range(200, 200).count() == 0);
 }
