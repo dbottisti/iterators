@@ -417,11 +417,7 @@ TEST_CASE("double-ended filter", "[filter]") {
 
 // Roadmap for Take:
 // For implementation:
-//  - nth
-//    - advance_by
 //  - size_hint
-//  - nth_back
-//    - advance_back_by
 //  - ExactSizeIterator
 //    - size
 
@@ -451,4 +447,21 @@ TEST_CASE("advance_back_by", "[advance_back_by]") {
 
     REQUIRE(iter::from(a).advance_back_by(a.size()) == 0);
     REQUIRE(iter::from(a).advance_back_by(100) == 100 - a.size());
+}
+
+TEST_CASE("nth", "[nth]") {
+    const std::array<std::int32_t, 5> v{0, 1, 2, 3, 4};
+    for (auto i = 0; i < v.size(); ++i) {
+        REQUIRE(iter::from(v).nth(i) == std::make_optional(v[i]));
+    }
+    REQUIRE(iter::from(v).nth(v.size()) == std::nullopt);
+}
+
+TEST_CASE("nth_back", "[nth_back]") {
+    const std::array<std::int32_t, 5> v{0, 1, 2, 3, 4};
+    for (auto i = 0; i < v.size(); ++i) {
+        REQUIRE(iter::from(v).nth_back(i)
+                == std::make_optional(v[v.size() - 1 - i]));
+    }
+    REQUIRE(iter::from(v).nth_back(v.size()) == std::nullopt);
 }

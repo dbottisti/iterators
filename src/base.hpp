@@ -103,6 +103,13 @@ public:
         return 0;
     }
 
+    std::optional<T> nth(const std::size_t n) {
+        if (self().advance_by(n) == 0) {
+            return self().next();
+        }
+        return std::nullopt;
+    }
+
 private:
     const Self& self() const { return *static_cast<const Self*>(this); }
     Self& self() { return *static_cast<Self*>(this); }
