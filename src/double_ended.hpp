@@ -37,6 +37,15 @@ public:
         }
     }
 
+    std::size_t advance_back_by(const std::size_t n) {
+        for (auto i = 0; i < n; ++i) {
+            if (!self().next_back()) {
+                return n - i;
+            }
+        }
+        return 0;
+    }
+
 private:
     const Self& self() const { return *static_cast<const Self*>(this); }
     Self& self() { return *static_cast<Self*>(this); }

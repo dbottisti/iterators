@@ -418,14 +418,37 @@ TEST_CASE("double-ended filter", "[filter]") {
 // Roadmap for Take:
 // For implementation:
 //  - nth
+//    - advance_by
 //  - size_hint
-//  - try_fold
-//  - fold
-//  - advance_by
-//  - next_back
 //  - nth_back
-//  - try_rfold
-//  - rfold
-//  - advance_back_by
+//    - advance_back_by
 //  - ExactSizeIterator
 //    - size
+
+TEST_CASE("advance_by", "[advance_by]") {
+    const std::array<std::int32_t, 5> a{0, 1, 2, 3, 4};
+
+    for (auto i = 0; i < a.size(); ++i) {
+        auto it = iter::from(a);
+        REQUIRE(it.advance_by(i) == 0);
+        REQUIRE(it.next() == std::make_optional(a[i]));
+        REQUIRE(it.advance_by(100) == 100 - (a.size() - 1 - i));
+    }
+
+    REQUIRE(iter::from(a).advance_by(a.size()) == 0);
+    REQUIRE(iter::from(a).advance_by(100) == 100 - a.size());
+}
+
+TEST_CASE("advance_back_by", "[advance_back_by]") {
+    const std::array<std::int32_t, 5> a{0, 1, 2, 3, 4};
+
+    for (auto i = 0; i < a.size(); ++i) {
+        auto it = iter::from(a);
+        REQUIRE(it.advance_back_by(i) == 0);
+        REQUIRE(it.next_back() == std::make_optional(a[a.size() - 1 - i]));
+        REQUIRE(it.advance_back_by(100) == 100 - (a.size() - 1 - i));
+    }
+
+    REQUIRE(iter::from(a).advance_back_by(a.size()) == 0);
+    REQUIRE(iter::from(a).advance_back_by(100) == 100 - a.size());
+}
