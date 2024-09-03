@@ -414,3 +414,18 @@ TEST_CASE("double-ended filter", "[filter]") {
     REQUIRE(it.next().value() == 2);
     REQUIRE(it.next_back() == std::nullopt);
 }
+
+// Roadmap for Take:
+// For implementation:
+//  - nth
+//  - size_hint
+//  - try_fold
+//  - fold
+//  - advance_by
+//  - next_back
+//  - nth_back
+//  - try_rfold
+//  - rfold
+//  - advance_back_by
+//  - ExactSizeIterator
+//    - size
