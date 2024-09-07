@@ -1,6 +1,9 @@
 #ifndef ITERATORS_BASE_HPP
 #define ITERATORS_BASE_HPP
 
+#include <cstdint>
+#include <utility>
+
 #include "detail/empty_base.hpp"
 #include "detail/traits.hpp"
 #include "double_ended.hpp"
@@ -9,10 +12,10 @@ namespace iter {
 
 // ---------------------------- Forward declarations ---------------------------
 
-template <typename Function, typename BaseIterator, typename Enable = void>
+template <typename Function, typename BaseIterator>
 class Map;
 
-template <typename Predicate, typename BaseIterator, typename Enable = void>
+template <typename Predicate, typename BaseIterator>
 class Filter;
 
 // ---------------------------------- Iterator ---------------------------------
