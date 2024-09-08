@@ -7,6 +7,7 @@
 #include "detail/empty_base.hpp"
 #include "detail/traits.hpp"
 #include "double_ended.hpp"
+#include "exact_size_iterator.hpp"
 
 namespace iter {
 
@@ -111,6 +112,10 @@ public:
             return self().next();
         }
         return std::nullopt;
+    }
+
+    std::pair<std::size_t, std::optional<std::size_t>> size_hint() const {
+        return {0, {}};
     }
 
 private:

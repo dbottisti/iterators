@@ -1,6 +1,7 @@
 #ifndef ITERATOR_SOURCES_RANGE_HPP
 #define ITERATOR_SOURCES_RANGE_HPP
 
+#include <cstdint>
 #include <optional>
 
 #include "base.hpp"
@@ -27,6 +28,10 @@ public:
         const auto next_value = value_;
         value_ += step_;
         return next_value;
+    }
+
+    std::pair<std::size_t, std::optional<std::size_t>> size_hint() const {
+        return {std::numeric_limits<std::size_t>::max(), {}};
     }
 
 private:

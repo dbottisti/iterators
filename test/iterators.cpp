@@ -1,6 +1,7 @@
 #include <array>
 #include <cstdint>
 #include <limits>
+#include <list>
 #include <optional>
 
 #include <catch2/catch_test_macros.hpp>
@@ -464,4 +465,36 @@ TEST_CASE("nth_back", "[nth_back]") {
                 == std::make_optional(v[v.size() - 1 - i]));
     }
     REQUIRE(iter::from(v).nth_back(v.size()) == std::nullopt);
+}
+
+TEST_CASE("size_hint", "[size_hint]") {
+    auto c = iter::range(0);
+    const auto v = std::array<std::int32_t, 10>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    const auto v2 = std::array<std::int32_t, 3>{10, 11, 12};
+    const auto v3 = std::list<std::int32_t>{20, 30, 40, 50};
+    auto vi = iter::from(v);
+
+    REQUIRE(iter::range(0).size_hint()
+            == std::pair{std::numeric_limits<std::size_t>::max(),
+                         std::optional<std::size_t>{}});
+    REQUIRE(c.size_hint()
+            == std::pair{std::numeric_limits<std::size_t>::max(),
+                         std::optional<std::size_t>{}});
+    REQUIRE(vi.size_hint()
+            == std::make_pair(std::size_t{10}, std::optional<std::size_t>{10}));
+
+    REQUIRE(iter::range(v3).size_hint()
+            == std::pair{std::numeric_limits<std::size_t>::max(),
+                         std::optional<std::size_t>{}});
+
+    REQUIRE(c.filter([](const auto) { return false; }).size_hint()
+            == std::make_pair(std::size_t{0}, std::optional<std::size_t>{}));
+    REQUIRE(c.map([](const auto) { return 0; }).size_hint()
+            == std::make_pair(std::numeric_limits<std::size_t>::max(),
+                              std::optional<std::size_t>{}));
+
+    REQUIRE(vi.filter([](const auto) { return false; }).size_hint()
+            == std::make_pair(std::size_t{0}, std::optional<std::size_t>{10}));
+    REQUIRE(vi.map([](const auto) { return 0; }).size_hint()
+            == std::make_pair(std::size_t{10}, std::optional<std::size_t>{10}));
 }

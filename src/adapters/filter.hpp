@@ -79,6 +79,13 @@ public:
             });
     }
 
+    std::pair<std::size_t, std::optional<std::size_t>> size_hint() const {
+        const auto upper = base_iterator_.size_hint().second;
+
+        // Can't know a lower bound, due to predicate
+        return {0, upper};
+    }
+
     // -------------------------- DoubleEndedIterator --------------------------
 
     template <typename U = BaseIterator>

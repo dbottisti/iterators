@@ -33,6 +33,9 @@ class Map
     template <typename U>
     using is_double_ended = detail::is_double_ended<std::remove_reference_t<U>>;
 
+    template <typename U>
+    using is_exact_size = detail::is_exact_size<std::remove_reference_t<U>>;
+
 public:
     static_assert(
         std::is_invocable_v<Function, typename std::remove_reference_t<
@@ -73,6 +76,10 @@ public:
             init, [&f, this](const auto acc, const auto x) {
                 return f(acc, function_(x));
             });
+    }
+
+    std::pair<std::size_t, std::optional<std::size_t>> size_hint() const {
+        return base_iterator_.size_hint();
     }
 
     // -------------------------- DoubleEndedIterator --------------------------
