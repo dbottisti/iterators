@@ -1,18 +1,13 @@
 #ifndef ITERATORS_ADAPTERS_MAP_HPP
 #define ITERATORS_ADAPTERS_MAP_HPP
 
-#include <utility>
+#include <type_traits>
 
+#include "declarations.hpp"
 #include "detail/empty_base.hpp"
 #include "detail/traits.hpp"
 
 namespace iter {
-
-// Forward declarations
-template <typename Self, typename T>
-class Iterator;
-
-// Map
 
 template <typename Function, typename BaseIterator>
 class Map

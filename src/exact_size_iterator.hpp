@@ -3,16 +3,13 @@
 
 #include <type_traits>
 
+#include "declarations.hpp"
 #include "detail/traits.hpp"
 
 namespace iter {
 
-template <typename Self, typename T, typename Enable = void>
-class ExactSizeIterator {};
-
 template <typename Self, typename T>
-class ExactSizeIterator<Self, T,
-                        std::enable_if_t<detail::is_sized<Self>::value>> {
+class ExactSizeIterator {
 public:
     static constexpr bool is_exact_size_iterator = true;
 

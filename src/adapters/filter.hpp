@@ -1,18 +1,13 @@
 #ifndef ITERATOR_ADAPTERS_FILTER_HPP
 #define ITERATOR_ADAPTERS_FILTER_HPP
 
-#include <utility>
+#include <type_traits>
 
+#include "declarations.hpp"
 #include "detail/empty_base.hpp"
 #include "detail/traits.hpp"
 
 namespace iter {
-
-// Forward declarations
-template <typename Self, typename T>
-class Iterator;
-
-// Filter
 
 template <typename Predicate, typename BaseIterator>
 class Filter

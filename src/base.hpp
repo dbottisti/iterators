@@ -4,20 +4,13 @@
 #include <cstdint>
 #include <utility>
 
+#include "declarations.hpp"
 #include "detail/empty_base.hpp"
 #include "detail/traits.hpp"
 #include "double_ended.hpp"
 #include "exact_size_iterator.hpp"
 
 namespace iter {
-
-// ---------------------------- Forward declarations ---------------------------
-
-template <typename Function, typename BaseIterator>
-class Map;
-
-template <typename Predicate, typename BaseIterator>
-class Filter;
 
 // ---------------------------------- Iterator ---------------------------------
 
@@ -97,6 +90,10 @@ public:
     Filter<F, Self&> filter(F&& f) & {
         return Filter<F, Self&>{std::forward<F>(f), self()};
     }
+
+    Take<Self> take(const size_t n) && { return Take<Self>{n, self()}; }
+
+    Take<Self&> take(const size_t n) & { return Take<Self&>{n, self()}; }
 
     std::size_t advance_by(const size_t n) {
         for (auto i = 0; i < n; ++i) {

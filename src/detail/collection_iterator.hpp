@@ -22,7 +22,7 @@ class CollectionIterator
                                   std::declval<Collection>()))>>,
           EmptyBase>,
       public std::conditional_t<
-          detail::is_sized<Collection>::value,
+          detail::is_sized<std::remove_reference_t<Collection>>::value,
           ExactSizeIterator<CollectionIterator<Collection>,
                             std::remove_reference_t<decltype(*std::begin(
                                 std::declval<Collection>()))>>,

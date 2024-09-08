@@ -416,12 +416,6 @@ TEST_CASE("double-ended filter", "[filter]") {
     REQUIRE(it.next_back() == std::nullopt);
 }
 
-// Roadmap for Take:
-// For implementation:
-//  - size_hint
-//  - ExactSizeIterator
-//    - size
-
 TEST_CASE("advance_by", "[advance_by]") {
     const std::array<std::int32_t, 5> a{0, 1, 2, 3, 4};
 
